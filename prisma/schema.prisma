@@ -1,0 +1,97 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Singleton row (id always 1). Fully assistant-owned: overwritten wholesale on import.
+model Meta {
+  id    Int      @id @default(1)
+  owner String
+  today DateTime @db.Date
+}
+
+// Singleton row (id always 1). Fully assistant-owned: overwritten wholesale on import.
+model Bhag {
+  id           Int      @id @default(1)
+  label        String
+  cashOnHand   Float
+  cashTarget   Float
+  helocBalance Float
+  asOf         DateTime @db.Date
+  note         String?  @db.Text
+}
+
+model Area {
+  id          String     @id
+  name        String
+  // --- assistant-owned (overwritten on every import) ---
+  state       String     @db.Text
+  metricLabel String
+  metricValue String
+  constraint  String     @db.Text
+  lever       String     @db.Text
+  // ----------------------------------------------------
+  archived    Boolean    @default(false)
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  reports     Report[]
+  followUps   FollowUp[]
+}
+
+model Report {
+  id     String @id
+  areaId String
+  area   Area   @relation(fields: [areaId], references: [id])
+
+  // --- assistant-owned (overwritten on every import) ---
+  person  String
+  owes    String @db.Text
+  cadence String
+  // ----------------------------------------------------
+
+  // --- owner-owned (app UI only; never touched by import except on create) ---
+  status        String    @default("due") // "in" | "due" | "overdue" | "done"
+  lastReceivedAt DateTime?
+  // ----------------------------------------------------------------------------
+
+  archived  Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model FollowUp {
+  id     String @id
+  areaId String
+  area   Area   @relation(fields: [areaId], references: [id])
+
+  // --- assistant-owned (overwritten on every import) ---
+  item       String @db.Text
+  waitingOn  String
+  nextAction String @db.Text
+  // ----------------------------------------------------
+
+  // --- owner-owned (app UI only; never touched by import on update) ---
+  status      String   @default("open") // "open" | "done" | "delegated"
+  priority    Int?
+  lastTouched DateTime @db.Date // set by import ONLY on create
+  // ----------------------------------------------------------------------
+
+  archived  Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  notes     Note[]
+
+  @@index([status, priority, lastTouched])
+}
+
+model Note {
+  id         String   @id @default(cuid())
+  followUpId String
+  followUp   FollowUp @relation(fields: [followUpId], references: [id], onDelete: Cascade)
+  at         DateTime @default(now())
+  text       String   @db.Text
+}
