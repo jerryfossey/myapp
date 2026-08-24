@@ -49,12 +49,12 @@ Visit `http://localhost:3000`, enter `APP_PASSWORD` to get in.
    - `APP_PASSWORD` — the password you'll type on your phone to get in
    - `IMPORT_SECRET` — the bearer token the assistant sends to `/api/import`
    - `SESSION_SECRET` — any long random string (used to sign the session cookie)
-4. Deploy. The `build` script runs `prisma generate && next build`; run
-   `npx prisma migrate deploy` once (via `vercel env pull` + local run, or a
-   one-off `vercel exec`) to apply migrations against the production database.
-5. Seed it: `npm run db:seed` locally with `DATABASE_URL` pointed at
-   production (or send the section-9 payload to `POST /api/import` with the
-   `IMPORT_SECRET` bearer token).
+4. Deploy. The `build` script runs `prisma generate && prisma migrate deploy
+   && next build`, so pending migrations apply automatically on every
+   deploy — no manual migration step needed.
+5. Seed it once: `POST` the section-9 payload to `/api/import` with the
+   `IMPORT_SECRET` bearer token (e.g. via `curl`), or run `npm run db:seed`
+   locally with `DATABASE_URL` pointed at production.
 
 ## Import contract
 
