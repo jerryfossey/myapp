@@ -15,6 +15,7 @@ const createSchema = z.object({
   nextAction: z.string().min(1),
   scheduledFor: dateString.nullable().optional(),
   dueDate: dateString.nullable().optional(),
+  delegated: z.boolean().optional(),
   recurrence: z
     .object({
       type: z.enum(["fixed", "afterComplete"]),
@@ -56,7 +57,7 @@ export async function POST(req: NextRequest) {
       item: parsed.data.item,
       waitingOn: parsed.data.waitingOn,
       nextAction: parsed.data.nextAction,
-      status: "open",
+      status: parsed.data.delegated ? "delegated" : "open",
       priority: null,
       lastTouched: today,
       scheduledFor: parsed.data.scheduledFor ? parseDateOnly(parsed.data.scheduledFor) : null,

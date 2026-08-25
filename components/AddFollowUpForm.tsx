@@ -25,6 +25,7 @@ export default function AddFollowUpForm({
   const [selectedArea, setSelectedArea] = useState(areaId ?? areas?.[0]?.id ?? "");
   const [item, setItem] = useState("");
   const [waitingOn, setWaitingOn] = useState("me");
+  const [delegateNow, setDelegateNow] = useState(false);
   const [nextAction, setNextAction] = useState("");
   const [scheduledFor, setScheduledFor] = useState(defaultDate ?? "");
   const [repeats, setRepeats] = useState(false);
@@ -33,6 +34,7 @@ export default function AddFollowUpForm({
   function reset() {
     setItem("");
     setWaitingOn("me");
+    setDelegateNow(false);
     setNextAction("");
     setScheduledFor(defaultDate ?? "");
     setRepeats(false);
@@ -56,6 +58,7 @@ export default function AddFollowUpForm({
           waitingOn: waitingOn.trim() || "me",
           nextAction: nextAction.trim(),
           scheduledFor: scheduledFor || null,
+          delegated: delegateNow,
           recurrence: repeats
             ? { type: recurrence.type, interval, unit: recurrence.unit, start: recurrence.start }
             : null,
@@ -108,6 +111,10 @@ export default function AddFollowUpForm({
         placeholder="Waiting on (defaults to me)"
         className="w-full rounded-xl border border-neutral-300 px-3 py-2 text-sm dark:border-neutral-700 dark:bg-neutral-900"
       />
+      <label className="flex items-center gap-2 py-1 text-sm text-neutral-600 dark:text-neutral-400">
+        <input type="checkbox" checked={delegateNow} onChange={(e) => setDelegateNow(e.target.checked)} />
+        Delegated to {waitingOn.trim() || "me"} already
+      </label>
       <input
         type="date"
         value={scheduledFor}
