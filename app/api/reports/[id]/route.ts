@@ -6,6 +6,7 @@ import { getReferenceToday } from "@/lib/meta";
 const actionSchema = z.discriminatedUnion("action", [
   z.object({ action: z.literal("received") }),
   z.object({ action: z.literal("flag"), status: z.enum(["due", "overdue"]) }),
+  z.object({ action: z.literal("done") }), // archive — mirrors FollowUp's "done" action
 ]);
 
 export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
@@ -28,10 +29,15 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
       where: { id: params.id },
       data: { status: "in", lastReceivedAt: today },
     });
-  } else {
+  } else if (input.action === "flag") {
     report = await prisma.report.update({
       where: { id: params.id },
       data: { status: input.status },
+    });
+  } else {
+    report = await prisma.report.update({
+      where: { id: params.id },
+      data: { status: "done" },
     });
   }
 

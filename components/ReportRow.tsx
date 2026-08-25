@@ -51,6 +51,9 @@ export default function ReportRow({ report, showArea = true }: { report: ReportV
           <button className="btn-secondary" disabled={isPending} onClick={() => setFlagging(!flagging)}>
             Flag
           </button>
+          <button className="btn-secondary" disabled={isPending} onClick={() => patch({ action: "done" })}>
+            Archive
+          </button>
         </div>
       )}
 

@@ -8,6 +8,7 @@ import { ReportVM } from "@/lib/types";
 import FollowUpRow from "@/components/FollowUpRow";
 import ReportRow from "@/components/ReportRow";
 import AddFollowUpForm from "@/components/AddFollowUpForm";
+import AddReportForm from "@/components/AddReportForm";
 
 export const dynamic = "force-dynamic";
 
@@ -40,6 +41,9 @@ export default async function AreaDetailPage({ params }: { params: { id: string 
   const active = sortFollowUps(followUps.filter((f) => f.status !== "done"));
   const done = followUps.filter((f) => f.status === "done");
 
+  const activeReports = reports.filter((r) => r.displayStatus !== "done");
+  const doneReports = reports.filter((r) => r.displayStatus === "done");
+
   return (
     <div>
       <Link href="/" className="mb-3 inline-block text-sm text-neutral-500">
@@ -62,15 +66,28 @@ export default async function AreaDetailPage({ params }: { params: { id: string 
         <span className="font-medium text-neutral-800 dark:text-neutral-200">Lever:</span> {area.lever}
       </p>
 
-      {reports.length > 0 && (
-        <section className="mt-6">
-          <h2 className="mb-2 text-sm font-semibold text-neutral-500">Reports</h2>
-          <div className="space-y-2">
-            {reports.map((r) => (
+      <section className="mt-6">
+        <h2 className="mb-2 text-sm font-semibold text-neutral-500">Reports</h2>
+        {activeReports.length === 0 && <p className="mb-3 text-sm text-neutral-500">Nothing open.</p>}
+        <div className="space-y-2">
+          {activeReports.map((r) => (
+            <ReportRow key={r.id} report={r} showArea={false} />
+          ))}
+          <AddReportForm areaId={area.id} />
+        </div>
+      </section>
+
+      {doneReports.length > 0 && (
+        <details className="mt-6">
+          <summary className="cursor-pointer text-sm font-semibold text-neutral-500">
+            Archived reports ({doneReports.length})
+          </summary>
+          <div className="mt-3 space-y-2">
+            {doneReports.map((r) => (
               <ReportRow key={r.id} report={r} showArea={false} />
             ))}
           </div>
-        </section>
+        </details>
       )}
 
       <section className="mt-6">
