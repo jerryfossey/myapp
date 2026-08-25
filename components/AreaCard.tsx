@@ -1,4 +1,6 @@
 import Link from "next/link";
+import SiloDot from "./SiloDot";
+import { accentCssVars } from "@/lib/areaColors";
 
 export default function AreaCard({
   area,
@@ -15,9 +17,16 @@ export default function AreaCard({
   };
 }) {
   return (
-    <Link href={`/area/${area.id}`} className="card block active:scale-[0.99]">
+    <Link
+      href={`/area/${area.id}`}
+      className="card silo-accent silo-border block active:scale-[0.99]"
+      style={accentCssVars(area.id) as React.CSSProperties}
+    >
       <div className="flex items-start justify-between gap-2">
-        <h3 className="font-semibold">{area.name}</h3>
+        <h3 className="flex items-start gap-2 font-semibold">
+          <SiloDot areaId={area.id} className="mt-1.5" />
+          {area.name}
+        </h3>
         <div className="flex shrink-0 gap-1.5">
           {area.overdueReports > 0 && (
             <span className="badge bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-300">

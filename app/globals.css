@@ -33,3 +33,28 @@ body {
 .badge {
   @apply inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold;
 }
+
+/* Per-silo accent. --accent-light/--accent-dark are set inline per area
+   (see lib/areaColors.ts); this resolves them to --accent based on theme,
+   respecting both system preference and a future manual toggle. */
+.silo-accent {
+  --accent: var(--accent-light);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .silo-accent {
+    --accent: var(--accent-dark);
+  }
+}
+:root[data-theme="dark"] .silo-accent {
+  --accent: var(--accent-dark);
+}
+
+.silo-dot {
+  background-color: var(--accent);
+}
+
+.silo-border {
+  border-left-width: 3px;
+  border-left-style: solid;
+  border-left-color: var(--accent);
+}

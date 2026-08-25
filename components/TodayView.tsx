@@ -2,8 +2,10 @@
 
 import { useMemo, useState } from "react";
 import { FollowUpVM, ReportVM } from "@/lib/types";
-import FollowUpRow from "./FollowUpRow";
 import ReportRow from "./ReportRow";
+import SiloGroupedList from "./SiloGroupedList";
+import ViewModeToggle from "./ViewModeToggle";
+import { useSiloViewState } from "@/lib/useSiloViewState";
 
 type Filter = "all" | "mine" | "chasing";
 
@@ -15,6 +17,7 @@ export default function TodayView({
   overdueReports: ReportVM[];
 }) {
   const [filter, setFilter] = useState<Filter>("all");
+  const { mode, setMode, collapsed, toggleSection, expandAll, collapseAll } = useSiloViewState("today");
 
   const visible = useMemo(() => {
     if (filter === "mine") return followUps.filter((f) => f.waitingOn.toLowerCase() === "me");
@@ -62,11 +65,15 @@ export default function TodayView({
       {visible.length === 0 ? (
         <p className="py-8 text-center text-sm text-neutral-500">Nothing here. Clean plate.</p>
       ) : (
-        <div className="space-y-3">
-          {visible.map((f) => (
-            <FollowUpRow key={f.id} followUp={f} />
-          ))}
-        </div>
+        <>
+          <ViewModeToggle
+            mode={mode}
+            onModeChange={setMode}
+            onExpandAll={expandAll}
+            onCollapseAll={() => collapseAll(Array.from(new Set(visible.map((f) => f.areaId))))}
+          />
+          <SiloGroupedList followUps={visible} mode={mode} collapsed={collapsed} onToggleSection={toggleSection} />
+        </>
       )}
     </div>
   );

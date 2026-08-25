@@ -18,6 +18,17 @@ See the build brief for the full spec. In short:
 - **Week view** (`/week`) is the planning screen: a rolling 7-day window,
   each day's open follow-ups sorted by silo, plus Overdue/Later/Unscheduled
   buckets. Reschedule any item to move it between days.
+- **Flat / By-silo toggle** on Today and Week: Flat is the plain
+  priority/age-sorted list; By-silo groups into a collapsible accordion per
+  area (accent dot, name, open-count, ordered by the silo that's gone
+  longest untouched). The chosen mode and which sections are collapsed
+  persist per-viewer in `localStorage` (`lib/useSiloViewState.ts`) — a
+  device preference, not board data.
+- **Per-silo accent color** (`lib/areaColors.ts`): a small dot + 3px left
+  border per area, in both light and dark, so silos are visually
+  distinguishable at a glance. Presentation-only — the color mapping is an
+  app-side constant keyed by area id, never part of the import payload or
+  the database.
 - **Home** (`/`) shows the BHAG strip and one card per area.
 - **Area detail** (`/area/[id]`) shows the full record for one area plus its
   reports and follow-ups (including an archived/done view).
