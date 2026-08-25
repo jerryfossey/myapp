@@ -9,9 +9,16 @@ set -euo pipefail
 # fallback is actually available — an empty export would block Prisma's
 # own .env loading during local development.
 if [ -z "${DATABASE_URL:-}" ]; then
-  fallback="${POSTGRES_PRISMA_URL:-${POSTGRES_URL:-${POSTGRES_URL_NON_POOLING:-${DATABASE_URL_UNPOOLED:-}}}}"
-  if [ -n "$fallback" ]; then
-    export DATABASE_URL="$fallback"
+  if [ -n "${POSTGRES_PRISMA_URL:-}" ]; then
+    export DATABASE_URL="$POSTGRES_PRISMA_URL"; echo "[build] Using POSTGRES_PRISMA_URL for DATABASE_URL"
+  elif [ -n "${POSTGRES_URL:-}" ]; then
+    export DATABASE_URL="$POSTGRES_URL"; echo "[build] Using POSTGRES_URL for DATABASE_URL"
+  elif [ -n "${POSTGRES_URL_NON_POOLING:-}" ]; then
+    export DATABASE_URL="$POSTGRES_URL_NON_POOLING"; echo "[build] Using POSTGRES_URL_NON_POOLING for DATABASE_URL"
+  elif [ -n "${DATABASE_URL_UNPOOLED:-}" ]; then
+    export DATABASE_URL="$DATABASE_URL_UNPOOLED"; echo "[build] Using DATABASE_URL_UNPOOLED for DATABASE_URL"
+  else
+    echo "[build] No DATABASE_URL / POSTGRES_* connection string found in the environment."
   fi
 fi
 
