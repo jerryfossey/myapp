@@ -7,6 +7,7 @@ import { dateOnlyISO } from "@/lib/dates";
 import { FollowUpVM, ReportVM } from "@/lib/types";
 import FollowUpRow from "@/components/FollowUpRow";
 import ReportRow from "@/components/ReportRow";
+import AddFollowUpForm from "@/components/AddFollowUpForm";
 
 export const dynamic = "force-dynamic";
 
@@ -94,15 +95,13 @@ export default async function AreaDetailPage({ params }: { params: { id: string 
 
       <section className="mt-6">
         <h2 className="mb-2 text-sm font-semibold text-neutral-500">Follow-ups</h2>
-        {active.length === 0 ? (
-          <p className="text-sm text-neutral-500">Nothing open.</p>
-        ) : (
-          <div className="space-y-3">
-            {active.map((f) => (
-              <FollowUpRow key={f.id} followUp={f} showArea={false} />
-            ))}
-          </div>
-        )}
+        {active.length === 0 && <p className="mb-3 text-sm text-neutral-500">Nothing open.</p>}
+        <div className="space-y-3">
+          {active.map((f) => (
+            <FollowUpRow key={f.id} followUp={f} showArea={false} />
+          ))}
+          <AddFollowUpForm areaId={area.id} />
+        </div>
       </section>
 
       {done.length > 0 && (
