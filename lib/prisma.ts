@@ -1,16 +1,8 @@
 import { PrismaClient } from "@prisma/client";
+import { resolveDatabaseUrl } from "./resolveDatabaseUrl";
 
-// Different Postgres storage products on Vercel name their connection string
-// env var differently (POSTGRES_PRISMA_URL, POSTGRES_URL, ...). Resolve to
-// the canonical DATABASE_URL Prisma expects before it's read, so it doesn't
-// matter which one got connected to the project.
 if (!process.env.DATABASE_URL) {
-  process.env.DATABASE_URL =
-    process.env.POSTGRES_PRISMA_URL ||
-    process.env.POSTGRES_URL ||
-    process.env.POSTGRES_URL_NON_POOLING ||
-    process.env.DATABASE_URL_UNPOOLED ||
-    "";
+  process.env.DATABASE_URL = resolveDatabaseUrl(process.env);
 }
 
 const globalForPrisma = globalThis as unknown as { prisma?: PrismaClient };
