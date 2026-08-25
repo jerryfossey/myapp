@@ -47,6 +47,15 @@ export function isStale(ageDays: number): boolean {
   return ageDays >= STALE_THRESHOLD_DAYS;
 }
 
+// A delegated item is flagged for a nudge sooner than the general
+// staleness threshold — chasing a person you handed something off to
+// wants a faster cadence than your own solo work.
+export const DELEGATED_NUDGE_DAYS = 5;
+
+export function needsDelegationNudge(ageDays: number): boolean {
+  return ageDays >= DELEGATED_NUDGE_DAYS;
+}
+
 // A project flags "at risk" once its due date is within this many days
 // (or already past) while it still has open/delegated subtasks — the same
 // kind of stalling signal STALE_THRESHOLD_DAYS gives a follow-up.

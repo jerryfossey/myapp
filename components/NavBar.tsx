@@ -19,6 +19,7 @@ export default function NavBar() {
     { href: "/", label: "Home" },
     { href: "/today", label: "Today" },
     { href: "/week", label: "Week" },
+    { href: "/waiting-on", label: "Waiting on" },
     { href: "/dashboard", label: "Dashboard" },
   ];
 
