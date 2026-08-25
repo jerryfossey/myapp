@@ -76,12 +76,14 @@ Content-Type: application/json
 
 Partial payloads are fine — only the areas/items present are upserted. New
 items are created with whatever fields are given (including initial owner
-fields like `status`/`priority`/`lastTouched`). Existing items only have
-their assistant-owned fields refreshed (`state`/`metric`/`constraint`/`lever`
-on an area; `owes`/`cadence` on a report; `item`/`nextAction` and — unless the
-owner has since delegated it — `waitingOn` on a follow-up); `status`,
-`priority`, `notes`, and `lastTouched` are never touched by an update. The
-response reports created/updated/untouched counts per entity type.
+fields like `status`/`priority`/`lastTouched`/`waitingOn`). Existing items
+only have their assistant-owned fields refreshed (`state`/`metric`/`constraint`/`lever`
+on an area; `owes`/`cadence` on a report; `item`/`nextAction` on a follow-up);
+`status`, `priority`, `notes`, `lastTouched`, and `waitingOn` are never
+touched by an update — `waitingOn` is set on create only, exactly like
+`lastTouched`, so a Delegate the owner made in the app is never reverted by
+a later import. The response reports created/updated/untouched counts per
+entity type.
 
 ## Write actions
 

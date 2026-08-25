@@ -163,14 +163,15 @@ export async function runImport(payload: ImportPayload): Promise<ImportSummary> 
           const next: Prisma.FollowUpUpdateInput = {};
           if (fu.item !== existingFu.item) next.item = fu.item;
           if (fu.nextAction !== existingFu.nextAction) next.nextAction = fu.nextAction;
-          // waitingOn is assistant-owned, EXCEPT once the owner has explicitly
-          // delegated this item — at that point the owner's chosen delegate
-          // takes precedence over the assistant's context until un-delegated.
-          if (existingFu.status !== "delegated" && fu.waitingOn !== existingFu.waitingOn) {
-            next.waitingOn = fu.waitingOn;
-          }
-          // status, priority, notes, lastTouched are owner-owned; never
-          // overwritten on update, per the field-ownership table.
+          // waitingOn behaves like lastTouched: set on create only, never
+          // overwritten on update. The in-app Delegate action also writes
+          // waitingOn, so on an update it's ambiguous whether the payload's
+          // value reflects newer assistant context or is just stale relative
+          // to a delegation the owner made since the last import — treating
+          // it as owner-owned once created avoids silently reverting a
+          // delegation.
+          // status, priority, notes, lastTouched, waitingOn are owner-owned;
+          // never overwritten on update, per the field-ownership table.
 
           if (Object.keys(next).length > 0) {
             await tx.followUp.update({ where: { id: fu.id }, data: next });
