@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { FollowUpVM } from "@/lib/types";
+import { formatDate } from "@/lib/format";
 
 async function patchFollowUp(id: string, body: unknown) {
   const res = await fetch(`/api/followups/${id}`, {
@@ -23,10 +24,13 @@ export default function FollowUpRow({
 }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
-  const [expanded, setExpanded] = useState<"delegate" | "priority" | "note" | "notes" | null>(null);
+  const [expanded, setExpanded] = useState<"delegate" | "priority" | "note" | "notes" | "schedule" | null>(
+    null
+  );
   const [delegateTo, setDelegateTo] = useState("");
   const [priorityInput, setPriorityInput] = useState(followUp.priority?.toString() ?? "");
   const [noteText, setNoteText] = useState("");
+  const [scheduleInput, setScheduleInput] = useState(followUp.scheduledFor ?? "");
 
   function run(body: unknown) {
     startTransition(async () => {
@@ -63,6 +67,11 @@ export default function FollowUpRow({
             {followUp.status === "delegated" && (
               <span className="rounded-full bg-purple-100 px-2 py-0.5 text-purple-700 dark:bg-purple-950 dark:text-purple-300">
                 delegated
+              </span>
+            )}
+            {followUp.scheduledFor && (
+              <span className="rounded-full bg-blue-100 px-2 py-0.5 text-blue-700 dark:bg-blue-950 dark:text-blue-300">
+                {formatDate(new Date(followUp.scheduledFor))}
               </span>
             )}
           </div>
@@ -118,6 +127,16 @@ export default function FollowUpRow({
             onClick={() => setExpanded(expanded === "note" ? null : "note")}
           >
             Add note
+          </button>
+          <button
+            className="btn-secondary"
+            disabled={isPending}
+            onClick={() => {
+              setScheduleInput(followUp.scheduledFor ?? "");
+              setExpanded(expanded === "schedule" ? null : "schedule");
+            }}
+          >
+            {followUp.scheduledFor ? "Reschedule" : "Schedule"}
           </button>
         </div>
       )}
@@ -180,6 +199,37 @@ export default function FollowUpRow({
           >
             Save
           </button>
+        </div>
+      )}
+
+      {expanded === "schedule" && (
+        <div className="mt-3 flex gap-2">
+          <input
+            autoFocus
+            type="date"
+            value={scheduleInput}
+            onChange={(e) => setScheduleInput(e.target.value)}
+            className="min-w-0 flex-1 rounded-xl border border-neutral-300 px-3 py-2 text-sm dark:border-neutral-700 dark:bg-neutral-900"
+          />
+          <button
+            className="btn-primary"
+            disabled={isPending}
+            onClick={() => run({ action: "reschedule", scheduledFor: scheduleInput || null })}
+          >
+            Set
+          </button>
+          {followUp.scheduledFor && (
+            <button
+              className="btn-secondary"
+              disabled={isPending}
+              onClick={() => {
+                setScheduleInput("");
+                run({ action: "reschedule", scheduledFor: null });
+              }}
+            >
+              Clear
+            </button>
+          )}
         </div>
       )}
     </div>

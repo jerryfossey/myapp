@@ -3,12 +3,18 @@ import { randomUUID } from "crypto";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { getReferenceToday } from "@/lib/meta";
+import { parseDateOnly } from "@/lib/dates";
 
 const createSchema = z.object({
   areaId: z.string().min(1),
   item: z.string().min(1),
   waitingOn: z.string().min(1),
   nextAction: z.string().min(1),
+  scheduledFor: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}/, "expected YYYY-MM-DD")
+    .nullable()
+    .optional(),
 });
 
 // Owner-authored ad-hoc follow-ups (the "+" button), as opposed to the bulk
@@ -36,6 +42,7 @@ export async function POST(req: NextRequest) {
       status: "open",
       priority: null,
       lastTouched: today,
+      scheduledFor: parsed.data.scheduledFor ? parseDateOnly(parsed.data.scheduledFor) : null,
     },
   });
 

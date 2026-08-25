@@ -12,6 +12,7 @@ export type FollowUpVM = {
   lastTouched: string; // ISO date
   ageDays: number;
   stale: boolean;
+  scheduledFor: string | null; // ISO date, null = unscheduled/backlog
   notes: NoteVM[];
 };
 

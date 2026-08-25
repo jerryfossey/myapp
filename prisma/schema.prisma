@@ -75,9 +75,10 @@ model FollowUp {
   // ----------------------------------------------------
 
   // --- owner-owned (app UI only; never touched by import on update) ---
-  status      String   @default("open") // "open" | "done" | "delegated"
-  priority    Int?
-  lastTouched DateTime @db.Date // set by import ONLY on create
+  status        String    @default("open") // "open" | "done" | "delegated"
+  priority      Int?
+  lastTouched   DateTime  @db.Date // set by import ONLY on create
+  scheduledFor  DateTime? @db.Date // which day this is planned for; null = unscheduled/backlog
   // ----------------------------------------------------------------------
 
   archived  Boolean  @default(false)
@@ -86,6 +87,7 @@ model FollowUp {
   notes     Note[]
 
   @@index([status, priority, lastTouched])
+  @@index([status, scheduledFor])
 }
 
 model Note {

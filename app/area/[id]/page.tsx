@@ -2,9 +2,9 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { getReferenceToday } from "@/lib/meta";
-import { derivedReportStatus, followUpAgeDays, isStale } from "@/lib/derived";
-import { dateOnlyISO } from "@/lib/dates";
-import { FollowUpVM, ReportVM } from "@/lib/types";
+import { derivedReportStatus } from "@/lib/derived";
+import { toFollowUpVM, sortFollowUps } from "@/lib/queries";
+import { ReportVM } from "@/lib/types";
 import FollowUpRow from "@/components/FollowUpRow";
 import ReportRow from "@/components/ReportRow";
 import AddFollowUpForm from "@/components/AddFollowUpForm";
@@ -15,7 +15,10 @@ export default async function AreaDetailPage({ params }: { params: { id: string 
   const [area, today] = await Promise.all([
     prisma.area.findUnique({
       where: { id: params.id },
-      include: { reports: true, followUps: { include: { notes: { orderBy: { at: "desc" } } } } },
+      include: {
+        reports: true,
+        followUps: { include: { area: true, notes: { orderBy: { at: "desc" } } } },
+      },
     }),
     getReferenceToday(),
   ]);
@@ -32,32 +35,9 @@ export default async function AreaDetailPage({ params }: { params: { id: string 
     displayStatus: derivedReportStatus(r, today),
   }));
 
-  const followUps: FollowUpVM[] = area.followUps.map((f) => {
-    const ageDays = followUpAgeDays(f.lastTouched, today);
-    return {
-      id: f.id,
-      areaId: area.id,
-      areaName: area.name,
-      item: f.item,
-      waitingOn: f.waitingOn,
-      nextAction: f.nextAction,
-      status: f.status as FollowUpVM["status"],
-      priority: f.priority,
-      lastTouched: dateOnlyISO(f.lastTouched),
-      ageDays,
-      stale: isStale(ageDays),
-      notes: f.notes.map((n) => ({ id: n.id, at: n.at.toISOString(), text: n.text })),
-    };
-  });
+  const followUps = area.followUps.map((f) => toFollowUpVM(f, today));
 
-  const active = followUps
-    .filter((f) => f.status !== "done")
-    .sort((a, b) => {
-      const ap = a.priority ?? Infinity;
-      const bp = b.priority ?? Infinity;
-      if (ap !== bp) return ap - bp;
-      return b.ageDays - a.ageDays;
-    });
+  const active = sortFollowUps(followUps.filter((f) => f.status !== "done"));
   const done = followUps.filter((f) => f.status === "done");
 
   return (

@@ -13,6 +13,12 @@ export function parseDateOnly(s: string | Date): Date {
   return new Date(s.slice(0, 10) + "T00:00:00.000Z");
 }
 
+export function addDays(d: Date, days: number): Date {
+  const base = parseDateOnly(d);
+  base.setUTCDate(base.getUTCDate() + days);
+  return base;
+}
+
 export function daysBetween(from: Date, to: Date): number {
   const a = parseDateOnly(from).getTime();
   const b = parseDateOnly(to).getTime();

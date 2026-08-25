@@ -11,12 +11,20 @@ See the build brief for the full spec. In short:
   delegate, reprioritize, add notes) via the app UI. Import upserts by stable
   `id` and never touches owner-owned fields on an update — see
   `lib/importUpsert.ts` for the exact rule per field.
-- **Today view** (`/today`) is the primary screen: every open follow-up
-  across all areas, sorted by priority then oldest `lastTouched`, with a
-  pinned block of overdue reports up top.
+- **Today view** (`/today`) is the primary screen: what's due now — open
+  follow-ups that are unscheduled, scheduled for today, or overdue — sorted
+  by priority then oldest `lastTouched`, with a pinned block of overdue
+  reports up top. Anything scheduled for a future day lives on Week instead.
+- **Week view** (`/week`) is the planning screen: a rolling 7-day window,
+  each day's open follow-ups sorted by silo, plus Overdue/Later/Unscheduled
+  buckets. Reschedule any item to move it between days.
 - **Home** (`/`) shows the BHAG strip and one card per area.
 - **Area detail** (`/area/[id]`) shows the full record for one area plus its
   reports and follow-ups (including an archived/done view).
+- **"+ Add follow-up"** lets the owner jot down an ad-hoc task directly in
+  the app (Today, Week, and area-detail all have it) — a small, deliberate
+  exception to "no manual authoring," scoped to one-off items rather than
+  bulk area context, which still only ever arrives via import.
 
 ## Stack
 
@@ -88,3 +96,12 @@ response reports created/updated/untouched counts per entity type.
 - **Add note** — appends a timestamped note, shown newest-first.
 - **Received / Flag** — on a report row, marks it received (also used to
   derive "overdue" from cadence + elapsed time) or manually flags due/overdue.
+- **Schedule / Reschedule** — sets or clears which day a follow-up is
+  planned for (`scheduledFor`); drives what shows on Today vs. Week.
+
+## Installing as an app
+
+The app ships a web manifest (`app/manifest.ts`) with `display: "standalone"`
+and a home-screen icon set. On iOS Safari or Android Chrome, "Add to Home
+Screen" launches it without browser chrome, like a native app — no app store
+needed.

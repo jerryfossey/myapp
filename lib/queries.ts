@@ -1,8 +1,32 @@
+import { Prisma } from "@prisma/client";
 import { prisma } from "./prisma";
 import { getReferenceToday } from "./meta";
 import { derivedReportStatus, followUpAgeDays, isStale } from "./derived";
 import { dateOnlyISO } from "./dates";
 import { FollowUpVM, ReportVM } from "./types";
+
+type FollowUpWithArea = Prisma.FollowUpGetPayload<{
+  include: { area: true; notes: true };
+}>;
+
+export function toFollowUpVM(f: FollowUpWithArea, today: Date): FollowUpVM {
+  const ageDays = followUpAgeDays(f.lastTouched, today);
+  return {
+    id: f.id,
+    areaId: f.areaId,
+    areaName: f.area.name,
+    item: f.item,
+    waitingOn: f.waitingOn,
+    nextAction: f.nextAction,
+    status: f.status as FollowUpVM["status"],
+    priority: f.priority,
+    lastTouched: dateOnlyISO(f.lastTouched),
+    ageDays,
+    stale: isStale(ageDays),
+    scheduledFor: f.scheduledFor ? dateOnlyISO(f.scheduledFor) : null,
+    notes: f.notes.map((n) => ({ id: n.id, at: n.at.toISOString(), text: n.text })),
+  };
+}
 
 export async function getAllFollowUps(): Promise<{ followUps: FollowUpVM[]; today: Date }> {
   const today = await getReferenceToday();
@@ -10,25 +34,7 @@ export async function getAllFollowUps(): Promise<{ followUps: FollowUpVM[]; toda
     include: { area: true, notes: { orderBy: { at: "desc" } } },
   });
 
-  const followUps: FollowUpVM[] = rows.map((f) => {
-    const ageDays = followUpAgeDays(f.lastTouched, today);
-    return {
-      id: f.id,
-      areaId: f.areaId,
-      areaName: f.area.name,
-      item: f.item,
-      waitingOn: f.waitingOn,
-      nextAction: f.nextAction,
-      status: f.status as FollowUpVM["status"],
-      priority: f.priority,
-      lastTouched: dateOnlyISO(f.lastTouched),
-      ageDays,
-      stale: isStale(ageDays),
-      notes: f.notes.map((n) => ({ id: n.id, at: n.at.toISOString(), text: n.text })),
-    };
-  });
-
-  return { followUps, today };
+  return { followUps: rows.map((f) => toFollowUpVM(f, today)), today };
 }
 
 export function sortFollowUps(followUps: FollowUpVM[]): FollowUpVM[] {

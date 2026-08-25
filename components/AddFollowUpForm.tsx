@@ -8,9 +8,11 @@ type AreaOption = { id: string; name: string };
 export default function AddFollowUpForm({
   areaId,
   areas,
+  defaultDate,
 }: {
   areaId?: string;
   areas?: AreaOption[];
+  defaultDate?: string | null;
 }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -19,11 +21,13 @@ export default function AddFollowUpForm({
   const [item, setItem] = useState("");
   const [waitingOn, setWaitingOn] = useState("me");
   const [nextAction, setNextAction] = useState("");
+  const [scheduledFor, setScheduledFor] = useState(defaultDate ?? "");
 
   function reset() {
     setItem("");
     setWaitingOn("me");
     setNextAction("");
+    setScheduledFor(defaultDate ?? "");
     setOpen(false);
   }
 
@@ -39,6 +43,7 @@ export default function AddFollowUpForm({
           item: item.trim(),
           waitingOn: waitingOn.trim() || "me",
           nextAction: nextAction.trim(),
+          scheduledFor: scheduledFor || null,
         }),
       });
       reset();
@@ -87,6 +92,13 @@ export default function AddFollowUpForm({
         onChange={(e) => setWaitingOn(e.target.value)}
         placeholder="Waiting on (defaults to me)"
         className="w-full rounded-xl border border-neutral-300 px-3 py-2 text-sm dark:border-neutral-700 dark:bg-neutral-900"
+      />
+      <input
+        type="date"
+        value={scheduledFor}
+        onChange={(e) => setScheduledFor(e.target.value)}
+        placeholder="Schedule for (optional)"
+        className="w-full rounded-xl border border-neutral-300 px-3 py-2 text-sm text-neutral-700 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-300"
       />
       <div className="flex gap-2">
         <button

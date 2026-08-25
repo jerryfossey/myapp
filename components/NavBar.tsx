@@ -18,6 +18,7 @@ export default function NavBar() {
   const tabs = [
     { href: "/", label: "Home" },
     { href: "/today", label: "Today" },
+    { href: "/week", label: "Week" },
   ];
 
   return (

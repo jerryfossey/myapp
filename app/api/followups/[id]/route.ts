@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { getReferenceToday } from "@/lib/meta";
+import { parseDateOnly } from "@/lib/dates";
+
+const dateString = z.string().regex(/^\d{4}-\d{2}-\d{2}/, "expected YYYY-MM-DD");
 
 const actionSchema = z.discriminatedUnion("action", [
   z.object({ action: z.literal("followed-up") }),
@@ -9,6 +12,7 @@ const actionSchema = z.discriminatedUnion("action", [
   z.object({ action: z.literal("delegate"), delegateTo: z.string().min(1) }),
   z.object({ action: z.literal("reprioritize"), priority: z.number().int().nullable() }),
   z.object({ action: z.literal("add-note"), text: z.string().min(1) }),
+  z.object({ action: z.literal("reschedule"), scheduledFor: dateString.nullable() }),
 ]);
 
 export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
@@ -57,6 +61,12 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
         where: { id: params.id },
         data: { notes: { create: { text: input.text } } },
         include: { notes: { orderBy: { at: "desc" } } },
+      });
+      break;
+    case "reschedule":
+      followUp = await prisma.followUp.update({
+        where: { id: params.id },
+        data: { scheduledFor: input.scheduledFor ? parseDateOnly(input.scheduledFor) : null },
       });
       break;
   }
