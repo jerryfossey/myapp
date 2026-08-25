@@ -27,12 +27,13 @@ export default function FollowUpRow({
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [expanded, setExpanded] = useState<
-    "delegate" | "priority" | "note" | "notes" | "schedule" | "recurrence" | null
+    "delegate" | "priority" | "note" | "notes" | "schedule" | "due" | "recurrence" | null
   >(null);
   const [delegateTo, setDelegateTo] = useState("");
   const [priorityInput, setPriorityInput] = useState(followUp.priority?.toString() ?? "");
   const [noteText, setNoteText] = useState("");
   const [scheduleInput, setScheduleInput] = useState(followUp.scheduledFor ?? "");
+  const [dueInput, setDueInput] = useState(followUp.dueDate ?? "");
   const [recurrence, setRecurrence] = useState<RecurrenceDraft>(
     followUp.recurrence
       ? { type: followUp.recurrence.type, interval: String(followUp.recurrence.interval), unit: followUp.recurrence.unit, start: followUp.recurrence.start }
@@ -79,6 +80,17 @@ export default function FollowUpRow({
             {followUp.scheduledFor && (
               <span className="rounded-full bg-blue-100 px-2 py-0.5 text-blue-700 dark:bg-blue-950 dark:text-blue-300">
                 {formatDate(new Date(followUp.scheduledFor))}
+              </span>
+            )}
+            {followUp.dueDate && (
+              <span
+                className={`rounded-full px-2 py-0.5 ${
+                  followUp.dueOverdue
+                    ? "bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-300"
+                    : "bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-300"
+                }`}
+              >
+                due {formatDate(new Date(followUp.dueDate))}
               </span>
             )}
             {followUp.recurrence && (
@@ -152,6 +164,16 @@ export default function FollowUpRow({
             }}
           >
             {followUp.scheduledFor ? "Reschedule" : "Schedule"}
+          </button>
+          <button
+            className="btn-secondary"
+            disabled={isPending}
+            onClick={() => {
+              setDueInput(followUp.dueDate ?? "");
+              setExpanded(expanded === "due" ? null : "due");
+            }}
+          >
+            {followUp.dueDate ? "Change due date" : "Due date"}
           </button>
           <button
             className="btn-secondary"
@@ -259,6 +281,37 @@ export default function FollowUpRow({
               onClick={() => {
                 setScheduleInput("");
                 run({ action: "reschedule", scheduledFor: null });
+              }}
+            >
+              Clear
+            </button>
+          )}
+        </div>
+      )}
+
+      {expanded === "due" && (
+        <div className="mt-3 flex gap-2">
+          <input
+            autoFocus
+            type="date"
+            value={dueInput}
+            onChange={(e) => setDueInput(e.target.value)}
+            className="min-w-0 flex-1 rounded-xl border border-neutral-300 px-3 py-2 text-sm dark:border-neutral-700 dark:bg-neutral-900"
+          />
+          <button
+            className="btn-primary"
+            disabled={isPending}
+            onClick={() => run({ action: "set-due-date", dueDate: dueInput || null })}
+          >
+            Set
+          </button>
+          {followUp.dueDate && (
+            <button
+              className="btn-secondary"
+              disabled={isPending}
+              onClick={() => {
+                setDueInput("");
+                run({ action: "set-due-date", dueDate: null });
               }}
             >
               Clear

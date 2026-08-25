@@ -46,3 +46,13 @@ export const STALE_THRESHOLD_DAYS = 14;
 export function isStale(ageDays: number): boolean {
   return ageDays >= STALE_THRESHOLD_DAYS;
 }
+
+// A project flags "at risk" once its due date is within this many days
+// (or already past) while it still has open/delegated subtasks — the same
+// kind of stalling signal STALE_THRESHOLD_DAYS gives a follow-up.
+export const PROJECT_AT_RISK_DAYS = 7;
+
+export function isProjectAtRisk(dueDate: Date | null, today: Date, hasUnfinishedSubtasks: boolean): boolean {
+  if (!dueDate || !hasUnfinishedSubtasks) return false;
+  return daysBetween(today, dueDate) <= PROJECT_AT_RISK_DAYS;
+}

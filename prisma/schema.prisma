@@ -40,6 +40,27 @@ model Area {
   updatedAt   DateTime   @updatedAt
   reports     Report[]
   followUps   FollowUp[]
+  projects    Project[]
+}
+
+// Owner-authored grouping for follow-ups (app UI only, like ad-hoc
+// follow-ups/reports — not part of the import payload). A project's
+// "subtasks" are just FollowUp rows with this as their projectId, so they
+// keep every existing follow-up behavior (status, scheduling, recurrence,
+// delegation) unchanged; progress is computed from their statuses, never
+// stored.
+model Project {
+  id        String     @id @default(cuid())
+  areaId    String
+  area      Area       @relation(fields: [areaId], references: [id])
+  name      String
+  dueDate   DateTime?  @db.Date
+  archived  Boolean    @default(false)
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+  followUps FollowUp[]
+
+  @@index([areaId, archived])
 }
 
 model Report {
@@ -79,6 +100,11 @@ model FollowUp {
   priority      Int?
   lastTouched   DateTime  @db.Date // set by import ONLY on create
   scheduledFor  DateTime? @db.Date // which day this is planned for; null = unscheduled/backlog
+  dueDate       DateTime? @db.Date // deadline, independent of scheduledFor
+
+  // Optional project grouping — a "subtask" is just a FollowUp with this set.
+  projectId String?
+  project   Project? @relation(fields: [projectId], references: [id])
 
   // Recurrence, app UI only. recurrenceType null = one-off (the default).
   // "fixed": next occurrence steps forward from recurrenceStart on a fixed
@@ -101,6 +127,7 @@ model FollowUp {
 
   @@index([status, priority, lastTouched])
   @@index([status, scheduledFor])
+  @@index([projectId])
 }
 
 model Note {

@@ -1,9 +1,9 @@
 import { Prisma } from "@prisma/client";
 import { prisma } from "./prisma";
 import { getReferenceToday } from "./meta";
-import { derivedReportStatus, followUpAgeDays, isStale } from "./derived";
-import { dateOnlyISO } from "./dates";
-import { FollowUpVM, ReportVM } from "./types";
+import { derivedReportStatus, followUpAgeDays, isProjectAtRisk, isStale } from "./derived";
+import { daysBetween, dateOnlyISO, parseDateOnly } from "./dates";
+import { FollowUpVM, ProjectVM, ReportVM } from "./types";
 
 type FollowUpWithArea = Prisma.FollowUpGetPayload<{
   include: { area: true; notes: true };
@@ -15,6 +15,7 @@ export function toFollowUpVM(f: FollowUpWithArea, today: Date): FollowUpVM {
     id: f.id,
     areaId: f.areaId,
     areaName: f.area.name,
+    projectId: f.projectId,
     item: f.item,
     waitingOn: f.waitingOn,
     nextAction: f.nextAction,
@@ -24,6 +25,8 @@ export function toFollowUpVM(f: FollowUpWithArea, today: Date): FollowUpVM {
     ageDays,
     stale: isStale(ageDays),
     scheduledFor: f.scheduledFor ? dateOnlyISO(f.scheduledFor) : null,
+    dueDate: f.dueDate ? dateOnlyISO(f.dueDate) : null,
+    dueOverdue: f.status !== "done" && f.dueDate !== null && daysBetween(today, f.dueDate) < 0,
     recurrence:
       f.recurrenceType && f.recurrenceInterval && f.recurrenceUnit && f.recurrenceStart
         ? {
@@ -34,6 +37,31 @@ export function toFollowUpVM(f: FollowUpWithArea, today: Date): FollowUpVM {
           }
         : null,
     notes: f.notes.map((n) => ({ id: n.id, at: n.at.toISOString(), text: n.text })),
+  };
+}
+
+type ProjectWithSubtasks = Prisma.ProjectGetPayload<{
+  include: { area: true; followUps: { include: { area: true; notes: true } } };
+}>;
+
+export function toProjectVM(p: ProjectWithSubtasks, today: Date): ProjectVM {
+  const subtasks = p.followUps.map((f) => toFollowUpVM(f, today));
+  const openCount = subtasks.filter((s) => s.status === "open").length;
+  const doneCount = subtasks.filter((s) => s.status === "done").length;
+  const delegatedCount = subtasks.filter((s) => s.status === "delegated").length;
+
+  return {
+    id: p.id,
+    areaId: p.areaId,
+    areaName: p.area.name,
+    name: p.name,
+    dueDate: p.dueDate ? dateOnlyISO(p.dueDate) : null,
+    atRisk: isProjectAtRisk(p.dueDate ? parseDateOnly(p.dueDate) : null, today, openCount + delegatedCount > 0),
+    archived: p.archived,
+    openCount,
+    doneCount,
+    delegatedCount,
+    subtasks,
   };
 }
 

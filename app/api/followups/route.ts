@@ -9,10 +9,12 @@ const dateString = z.string().regex(/^\d{4}-\d{2}-\d{2}/, "expected YYYY-MM-DD")
 
 const createSchema = z.object({
   areaId: z.string().min(1),
+  projectId: z.string().min(1).nullable().optional(),
   item: z.string().min(1),
   waitingOn: z.string().min(1),
   nextAction: z.string().min(1),
   scheduledFor: dateString.nullable().optional(),
+  dueDate: dateString.nullable().optional(),
   recurrence: z
     .object({
       type: z.enum(["fixed", "afterComplete"]),
@@ -38,11 +40,19 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "area not found" }, { status: 404 });
   }
 
+  if (parsed.data.projectId) {
+    const project = await prisma.project.findUnique({ where: { id: parsed.data.projectId } });
+    if (!project || project.areaId !== parsed.data.areaId) {
+      return NextResponse.json({ error: "project not found in this area" }, { status: 404 });
+    }
+  }
+
   const today = await getReferenceToday();
   const followUp = await prisma.followUp.create({
     data: {
       id: randomUUID(),
       areaId: parsed.data.areaId,
+      projectId: parsed.data.projectId ?? null,
       item: parsed.data.item,
       waitingOn: parsed.data.waitingOn,
       nextAction: parsed.data.nextAction,
@@ -50,6 +60,7 @@ export async function POST(req: NextRequest) {
       priority: null,
       lastTouched: today,
       scheduledFor: parsed.data.scheduledFor ? parseDateOnly(parsed.data.scheduledFor) : null,
+      dueDate: parsed.data.dueDate ? parseDateOnly(parsed.data.dueDate) : null,
       recurrenceType: parsed.data.recurrence?.type ?? null,
       recurrenceInterval: parsed.data.recurrence?.interval ?? null,
       recurrenceUnit: parsed.data.recurrence?.unit ?? null,

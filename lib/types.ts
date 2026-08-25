@@ -11,6 +11,7 @@ export type FollowUpVM = {
   id: string;
   areaId: string;
   areaName: string;
+  projectId: string | null;
   item: string;
   waitingOn: string;
   nextAction: string;
@@ -20,6 +21,8 @@ export type FollowUpVM = {
   ageDays: number;
   stale: boolean;
   scheduledFor: string | null; // ISO date, null = unscheduled/backlog
+  dueDate: string | null; // ISO date, a deadline independent of scheduledFor
+  dueOverdue: boolean; // dueDate has passed and it's still open
   recurrence: RecurrenceVM;
   notes: NoteVM[];
 };
@@ -32,4 +35,18 @@ export type ReportVM = {
   owes: string;
   cadence: string;
   displayStatus: "in" | "due" | "overdue" | "done";
+};
+
+export type ProjectVM = {
+  id: string;
+  areaId: string;
+  areaName: string;
+  name: string;
+  dueDate: string | null; // ISO date
+  atRisk: boolean;
+  archived: boolean;
+  openCount: number;
+  doneCount: number;
+  delegatedCount: number;
+  subtasks: FollowUpVM[];
 };

@@ -3,23 +3,31 @@ import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { getReferenceToday } from "@/lib/meta";
 import { derivedReportStatus } from "@/lib/derived";
-import { toFollowUpVM, sortFollowUps } from "@/lib/queries";
+import { toFollowUpVM, toProjectVM, sortFollowUps } from "@/lib/queries";
 import { ReportVM } from "@/lib/types";
+import { formatDate } from "@/lib/format";
 import FollowUpRow from "@/components/FollowUpRow";
 import ReportRow from "@/components/ReportRow";
+import ProjectCard from "@/components/ProjectCard";
 import AddFollowUpForm from "@/components/AddFollowUpForm";
 import AddReportForm from "@/components/AddReportForm";
+import AddProjectForm from "@/components/AddProjectForm";
 
 export const dynamic = "force-dynamic";
 
 export default async function AreaDetailPage({ params }: { params: { id: string } }) {
-  const [area, today] = await Promise.all([
+  const [area, projectRows, today] = await Promise.all([
     prisma.area.findUnique({
       where: { id: params.id },
       include: {
         reports: true,
         followUps: { include: { area: true, notes: { orderBy: { at: "desc" } } } },
       },
+    }),
+    prisma.project.findMany({
+      where: { areaId: params.id },
+      orderBy: { createdAt: "asc" },
+      include: { area: true, followUps: { include: { area: true, notes: { orderBy: { at: "desc" } } } } },
     }),
     getReferenceToday(),
   ]);
@@ -36,13 +44,19 @@ export default async function AreaDetailPage({ params }: { params: { id: string 
     displayStatus: derivedReportStatus(r, today),
   }));
 
-  const followUps = area.followUps.map((f) => toFollowUpVM(f, today));
+  // Follow-ups that belong to a project render under that project's card
+  // instead of the general list, so nothing appears twice.
+  const followUps = area.followUps.filter((f) => !f.projectId).map((f) => toFollowUpVM(f, today));
 
   const active = sortFollowUps(followUps.filter((f) => f.status !== "done"));
   const done = followUps.filter((f) => f.status === "done");
 
   const activeReports = reports.filter((r) => r.displayStatus !== "done");
   const doneReports = reports.filter((r) => r.displayStatus === "done");
+
+  const projects = projectRows.map((p) => toProjectVM(p, today));
+  const activeProjects = projects.filter((p) => !p.archived);
+  const archivedProjects = projects.filter((p) => p.archived);
 
   return (
     <div>
@@ -65,6 +79,36 @@ export default async function AreaDetailPage({ params }: { params: { id: string 
       <p className="mt-2 text-sm text-neutral-600 dark:text-neutral-400">
         <span className="font-medium text-neutral-800 dark:text-neutral-200">Lever:</span> {area.lever}
       </p>
+
+      <section className="mt-6">
+        <h2 className="mb-2 text-sm font-semibold text-neutral-500">Projects</h2>
+        {activeProjects.length === 0 && <p className="mb-3 text-sm text-neutral-500">No active projects.</p>}
+        <div className="space-y-3">
+          {activeProjects.map((p) => (
+            <ProjectCard key={p.id} project={p} />
+          ))}
+          <AddProjectForm areaId={area.id} />
+        </div>
+      </section>
+
+      {archivedProjects.length > 0 && (
+        <details className="mt-6">
+          <summary className="cursor-pointer text-sm font-semibold text-neutral-500">
+            Archived projects ({archivedProjects.length})
+          </summary>
+          <div className="mt-3 space-y-2">
+            {archivedProjects.map((p) => (
+              <div key={p.id} className="card flex items-center justify-between gap-2 text-sm">
+                <span>{p.name}</span>
+                <span className="viz-tabular text-xs text-neutral-500">
+                  {p.doneCount}/{p.openCount + p.doneCount + p.delegatedCount} done
+                  {p.dueDate && ` · due ${formatDate(new Date(p.dueDate))}`}
+                </span>
+              </div>
+            ))}
+          </div>
+        </details>
+      )}
 
       <section className="mt-6">
         <h2 className="mb-2 text-sm font-semibold text-neutral-500">Reports</h2>

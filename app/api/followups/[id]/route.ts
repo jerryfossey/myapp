@@ -24,6 +24,7 @@ const actionSchema = z.discriminatedUnion("action", [
   z.object({ action: z.literal("reprioritize"), priority: z.number().int().nullable() }),
   z.object({ action: z.literal("add-note"), text: z.string().min(1) }),
   z.object({ action: z.literal("reschedule"), scheduledFor: dateString.nullable() }),
+  z.object({ action: z.literal("set-due-date"), dueDate: dateString.nullable() }),
   z.object({ action: z.literal("set-recurrence"), recurrence: recurrenceInput }),
 ]);
 
@@ -78,6 +79,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
             data: {
               id: randomUUID(),
               areaId: existing.areaId,
+              projectId: existing.projectId,
               item: existing.item,
               waitingOn: existing.waitingOn,
               nextAction: existing.nextAction,
@@ -125,6 +127,12 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
       followUp = await prisma.followUp.update({
         where: { id: params.id },
         data: { scheduledFor: input.scheduledFor ? parseDateOnly(input.scheduledFor) : null },
+      });
+      break;
+    case "set-due-date":
+      followUp = await prisma.followUp.update({
+        where: { id: params.id },
+        data: { dueDate: input.dueDate ? parseDateOnly(input.dueDate) : null },
       });
       break;
     case "set-recurrence":

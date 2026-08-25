@@ -10,10 +10,14 @@ export default function AddFollowUpForm({
   areaId,
   areas,
   defaultDate,
+  projectId,
+  label = "+ Add follow-up",
 }: {
   areaId?: string;
   areas?: AreaOption[];
   defaultDate?: string | null;
+  projectId?: string;
+  label?: string;
 }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -47,6 +51,7 @@ export default function AddFollowUpForm({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           areaId: targetArea,
+          projectId: projectId ?? null,
           item: item.trim(),
           waitingOn: waitingOn.trim() || "me",
           nextAction: nextAction.trim(),
@@ -64,7 +69,7 @@ export default function AddFollowUpForm({
   if (!open) {
     return (
       <button onClick={() => setOpen(true)} className="btn-secondary w-full">
-        + Add follow-up
+        {label}
       </button>
     );
   }
