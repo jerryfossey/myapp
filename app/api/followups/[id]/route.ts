@@ -1,10 +1,21 @@
 import { NextRequest, NextResponse } from "next/server";
+import { randomUUID } from "crypto";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { getReferenceToday } from "@/lib/meta";
 import { parseDateOnly } from "@/lib/dates";
+import { nextAfterCompleteOccurrence, nextFixedOccurrence, RecurrenceUnit } from "@/lib/recurrence";
 
 const dateString = z.string().regex(/^\d{4}-\d{2}-\d{2}/, "expected YYYY-MM-DD");
+
+const recurrenceInput = z
+  .object({
+    type: z.enum(["fixed", "afterComplete"]),
+    interval: z.number().int().min(1),
+    unit: z.enum(["days", "weeks", "months"]),
+    start: dateString,
+  })
+  .nullable();
 
 const actionSchema = z.discriminatedUnion("action", [
   z.object({ action: z.literal("followed-up") }),
@@ -13,6 +24,7 @@ const actionSchema = z.discriminatedUnion("action", [
   z.object({ action: z.literal("reprioritize"), priority: z.number().int().nullable() }),
   z.object({ action: z.literal("add-note"), text: z.string().min(1) }),
   z.object({ action: z.literal("reschedule"), scheduledFor: dateString.nullable() }),
+  z.object({ action: z.literal("set-recurrence"), recurrence: recurrenceInput }),
 ]);
 
 export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
@@ -38,8 +50,8 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
         data: { lastTouched: today },
       });
       break;
-    case "done":
-      [followUp] = await prisma.$transaction([
+    case "done": {
+      const ops = [
         prisma.followUp.update({
           where: { id: params.id },
           data: { status: "done" },
@@ -47,8 +59,44 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
         prisma.statusEvent.create({
           data: { followUpId: existing.id, areaId: existing.areaId, from: existing.status, to: "done" },
         }),
-      ]);
+      ];
+
+      // Marking a recurring item done spawns its next occurrence as a new
+      // open row carrying the same recurrence config forward. Guarded on
+      // existing.status !== "done" so re-sending "done" on an
+      // already-done item (a stale/duplicate request) can't spawn twice.
+      if (existing.recurrenceType && existing.status !== "done") {
+        const unit = existing.recurrenceUnit as RecurrenceUnit;
+        const interval = existing.recurrenceInterval ?? 1;
+        const nextDate =
+          existing.recurrenceType === "fixed"
+            ? nextFixedOccurrence(existing.recurrenceStart ?? today, interval, unit, today)
+            : nextAfterCompleteOccurrence(today, interval, unit);
+
+        ops.push(
+          prisma.followUp.create({
+            data: {
+              id: randomUUID(),
+              areaId: existing.areaId,
+              item: existing.item,
+              waitingOn: existing.waitingOn,
+              nextAction: existing.nextAction,
+              status: "open",
+              priority: existing.priority,
+              lastTouched: today,
+              scheduledFor: nextDate,
+              recurrenceType: existing.recurrenceType,
+              recurrenceInterval: existing.recurrenceInterval,
+              recurrenceUnit: existing.recurrenceUnit,
+              recurrenceStart: existing.recurrenceType === "fixed" ? existing.recurrenceStart : today,
+            },
+          })
+        );
+      }
+
+      [followUp] = await prisma.$transaction(ops);
       break;
+    }
     case "delegate":
       [followUp] = await prisma.$transaction([
         prisma.followUp.update({
@@ -77,6 +125,24 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
       followUp = await prisma.followUp.update({
         where: { id: params.id },
         data: { scheduledFor: input.scheduledFor ? parseDateOnly(input.scheduledFor) : null },
+      });
+      break;
+    case "set-recurrence":
+      followUp = await prisma.followUp.update({
+        where: { id: params.id },
+        data: input.recurrence
+          ? {
+              recurrenceType: input.recurrence.type,
+              recurrenceInterval: input.recurrence.interval,
+              recurrenceUnit: input.recurrence.unit,
+              recurrenceStart: parseDateOnly(input.recurrence.start),
+            }
+          : {
+              recurrenceType: null,
+              recurrenceInterval: null,
+              recurrenceUnit: null,
+              recurrenceStart: null,
+            },
       });
       break;
   }

@@ -24,6 +24,15 @@ export function toFollowUpVM(f: FollowUpWithArea, today: Date): FollowUpVM {
     ageDays,
     stale: isStale(ageDays),
     scheduledFor: f.scheduledFor ? dateOnlyISO(f.scheduledFor) : null,
+    recurrence:
+      f.recurrenceType && f.recurrenceInterval && f.recurrenceUnit && f.recurrenceStart
+        ? {
+            type: f.recurrenceType as "fixed" | "afterComplete",
+            interval: f.recurrenceInterval,
+            unit: f.recurrenceUnit as "days" | "weeks" | "months",
+            start: dateOnlyISO(f.recurrenceStart),
+          }
+        : null,
     notes: f.notes.map((n) => ({ id: n.id, at: n.at.toISOString(), text: n.text })),
   };
 }

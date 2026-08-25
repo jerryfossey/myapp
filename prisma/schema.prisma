@@ -79,6 +79,19 @@ model FollowUp {
   priority      Int?
   lastTouched   DateTime  @db.Date // set by import ONLY on create
   scheduledFor  DateTime? @db.Date // which day this is planned for; null = unscheduled/backlog
+
+  // Recurrence, app UI only. recurrenceType null = one-off (the default).
+  // "fixed": next occurrence steps forward from recurrenceStart on a fixed
+  // calendar cadence (e.g. the 1st of every month), independent of when it
+  // was actually completed. "afterComplete": next occurrence is
+  // recurrenceInterval/recurrenceUnit after the day it's marked done.
+  // Marking a recurring item done spawns the next occurrence as a new row
+  // carrying the same recurrence config forward; this row's own fields are
+  // left as a historical record.
+  recurrenceType     String?
+  recurrenceInterval Int?
+  recurrenceUnit     String? // "days" | "weeks" | "months"
+  recurrenceStart    DateTime? @db.Date
   // ----------------------------------------------------------------------
 
   archived  Boolean  @default(false)

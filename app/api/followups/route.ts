@@ -5,14 +5,21 @@ import { prisma } from "@/lib/prisma";
 import { getReferenceToday } from "@/lib/meta";
 import { parseDateOnly } from "@/lib/dates";
 
+const dateString = z.string().regex(/^\d{4}-\d{2}-\d{2}/, "expected YYYY-MM-DD");
+
 const createSchema = z.object({
   areaId: z.string().min(1),
   item: z.string().min(1),
   waitingOn: z.string().min(1),
   nextAction: z.string().min(1),
-  scheduledFor: z
-    .string()
-    .regex(/^\d{4}-\d{2}-\d{2}/, "expected YYYY-MM-DD")
+  scheduledFor: dateString.nullable().optional(),
+  recurrence: z
+    .object({
+      type: z.enum(["fixed", "afterComplete"]),
+      interval: z.number().int().min(1),
+      unit: z.enum(["days", "weeks", "months"]),
+      start: dateString,
+    })
     .nullable()
     .optional(),
 });
@@ -43,6 +50,10 @@ export async function POST(req: NextRequest) {
       priority: null,
       lastTouched: today,
       scheduledFor: parsed.data.scheduledFor ? parseDateOnly(parsed.data.scheduledFor) : null,
+      recurrenceType: parsed.data.recurrence?.type ?? null,
+      recurrenceInterval: parsed.data.recurrence?.interval ?? null,
+      recurrenceUnit: parsed.data.recurrence?.unit ?? null,
+      recurrenceStart: parsed.data.recurrence ? parseDateOnly(parsed.data.recurrence.start) : null,
     },
   });
 

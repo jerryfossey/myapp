@@ -4,6 +4,8 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { FollowUpVM } from "@/lib/types";
 import { formatDate } from "@/lib/format";
+import { describeRecurrence } from "@/lib/recurrence";
+import RecurrenceFields, { defaultRecurrenceDraft, RecurrenceDraft } from "./RecurrenceFields";
 
 async function patchFollowUp(id: string, body: unknown) {
   const res = await fetch(`/api/followups/${id}`, {
@@ -24,13 +26,18 @@ export default function FollowUpRow({
 }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
-  const [expanded, setExpanded] = useState<"delegate" | "priority" | "note" | "notes" | "schedule" | null>(
-    null
-  );
+  const [expanded, setExpanded] = useState<
+    "delegate" | "priority" | "note" | "notes" | "schedule" | "recurrence" | null
+  >(null);
   const [delegateTo, setDelegateTo] = useState("");
   const [priorityInput, setPriorityInput] = useState(followUp.priority?.toString() ?? "");
   const [noteText, setNoteText] = useState("");
   const [scheduleInput, setScheduleInput] = useState(followUp.scheduledFor ?? "");
+  const [recurrence, setRecurrence] = useState<RecurrenceDraft>(
+    followUp.recurrence
+      ? { type: followUp.recurrence.type, interval: String(followUp.recurrence.interval), unit: followUp.recurrence.unit, start: followUp.recurrence.start }
+      : defaultRecurrenceDraft(followUp.scheduledFor ?? "")
+  );
 
   function run(body: unknown) {
     startTransition(async () => {
@@ -72,6 +79,14 @@ export default function FollowUpRow({
             {followUp.scheduledFor && (
               <span className="rounded-full bg-blue-100 px-2 py-0.5 text-blue-700 dark:bg-blue-950 dark:text-blue-300">
                 {formatDate(new Date(followUp.scheduledFor))}
+              </span>
+            )}
+            {followUp.recurrence && (
+              <span
+                title={describeRecurrence(followUp.recurrence)}
+                className="rounded-full bg-teal-100 px-2 py-0.5 text-teal-700 dark:bg-teal-950 dark:text-teal-300"
+              >
+                ↻ {describeRecurrence(followUp.recurrence)}
               </span>
             )}
           </div>
@@ -137,6 +152,25 @@ export default function FollowUpRow({
             }}
           >
             {followUp.scheduledFor ? "Reschedule" : "Schedule"}
+          </button>
+          <button
+            className="btn-secondary"
+            disabled={isPending}
+            onClick={() => {
+              setRecurrence(
+                followUp.recurrence
+                  ? {
+                      type: followUp.recurrence.type,
+                      interval: String(followUp.recurrence.interval),
+                      unit: followUp.recurrence.unit,
+                      start: followUp.recurrence.start,
+                    }
+                  : defaultRecurrenceDraft(followUp.scheduledFor ?? "")
+              );
+              setExpanded(expanded === "recurrence" ? null : "recurrence");
+            }}
+          >
+            {followUp.recurrence ? "Edit repeat" : "Repeat"}
           </button>
         </div>
       )}
@@ -230,6 +264,40 @@ export default function FollowUpRow({
               Clear
             </button>
           )}
+        </div>
+      )}
+
+      {expanded === "recurrence" && (
+        <div className="mt-3 space-y-2">
+          <RecurrenceFields value={recurrence} onChange={setRecurrence} />
+          <div className="flex gap-2">
+            <button
+              className="btn-primary"
+              disabled={isPending || !recurrence.start || !Number.isInteger(Number(recurrence.interval)) || Number(recurrence.interval) < 1}
+              onClick={() =>
+                run({
+                  action: "set-recurrence",
+                  recurrence: {
+                    type: recurrence.type,
+                    interval: Number(recurrence.interval),
+                    unit: recurrence.unit,
+                    start: recurrence.start,
+                  },
+                })
+              }
+            >
+              Set
+            </button>
+            {followUp.recurrence && (
+              <button
+                className="btn-secondary"
+                disabled={isPending}
+                onClick={() => run({ action: "set-recurrence", recurrence: null })}
+              >
+                Clear
+              </button>
+            )}
+          </div>
         </div>
       )}
     </div>

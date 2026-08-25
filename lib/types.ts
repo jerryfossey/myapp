@@ -1,5 +1,12 @@
 export type NoteVM = { id: string; at: string; text: string };
 
+export type RecurrenceVM = {
+  type: "fixed" | "afterComplete";
+  interval: number;
+  unit: "days" | "weeks" | "months";
+  start: string; // ISO date
+} | null;
+
 export type FollowUpVM = {
   id: string;
   areaId: string;
@@ -13,6 +20,7 @@ export type FollowUpVM = {
   ageDays: number;
   stale: boolean;
   scheduledFor: string | null; // ISO date, null = unscheduled/backlog
+  recurrence: RecurrenceVM;
   notes: NoteVM[];
 };
 
