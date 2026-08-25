@@ -2,6 +2,7 @@ import { Prisma } from "@prisma/client";
 import { prisma } from "./prisma";
 import { ImportPayload } from "./importSchema";
 import { parseDateOnly } from "./dates";
+import { getTimeCategory } from "./timeCategories";
 
 type Counts = { created: number; updated: number; untouched: number };
 const emptyCounts = (): Counts => ({ created: 0, updated: 0, untouched: 0 });
@@ -12,6 +13,7 @@ export type ImportSummary = {
   areas: Counts;
   reports: Counts;
   followUps: Counts;
+  time: Counts;
 };
 
 /**
@@ -26,6 +28,7 @@ export async function runImport(payload: ImportPayload): Promise<ImportSummary> 
     areas: emptyCounts(),
     reports: emptyCounts(),
     followUps: emptyCounts(),
+    time: emptyCounts(),
   };
 
   await prisma.$transaction(async (tx) => {
@@ -49,7 +52,7 @@ export async function runImport(payload: ImportPayload): Promise<ImportSummary> 
     if (payload.bhag) {
       const existing = await tx.bhag.findUnique({ where: { id: 1 } });
       const b = payload.bhag;
-      await tx.bhag.upsert({
+      const bhagRow = await tx.bhag.upsert({
         where: { id: 1 },
         create: {
           id: 1,
@@ -70,6 +73,19 @@ export async function runImport(payload: ImportPayload): Promise<ImportSummary> 
         },
       });
       summary.bhag = existing ? "updated" : "created";
+
+      // Log a snapshot on every import that includes a bhag block, using the
+      // resolved row (not the possibly-partial payload) so a snapshot always
+      // has complete values even when the payload only touched one field.
+      await tx.snapshot.create({
+        data: {
+          kind: "bhag",
+          cashOnHand: bhagRow.cashOnHand,
+          helocBalance: bhagRow.helocBalance,
+          cashTarget: bhagRow.cashTarget,
+          asOf: bhagRow.asOf,
+        },
+      });
     }
 
     for (const area of payload.areas ?? []) {
@@ -180,6 +196,30 @@ export async function runImport(payload: ImportPayload): Promise<ImportSummary> 
             summary.followUps.untouched++;
           }
         }
+      }
+    }
+
+    if (payload.time) {
+      const { week, entries } = payload.time;
+      const uploadDate = (payload.meta?.today ?? new Date().toISOString()).slice(0, 10);
+      await tx.timeUploadLog.upsert({
+        where: { week_date: { week, date: uploadDate } },
+        create: { week, date: uploadDate },
+        update: {},
+      });
+      for (const entry of entries) {
+        const existingWeek = await tx.timeWeek.findUnique({
+          where: { week_categoryId: { week, categoryId: entry.categoryId } },
+        });
+        // planned is owner-editable config; only seed it on first creation
+        // (from the category defaults), never overwrite it from an import.
+        const plannedDefault = getTimeCategory(entry.categoryId)?.planned ?? 0;
+        await tx.timeWeek.upsert({
+          where: { week_categoryId: { week, categoryId: entry.categoryId } },
+          create: { week, categoryId: entry.categoryId, planned: plannedDefault, actual: entry.actual },
+          update: { actual: entry.actual },
+        });
+        summary.time[existingWeek ? "updated" : "created"]++;
       }
     }
   });

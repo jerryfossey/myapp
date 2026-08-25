@@ -97,3 +97,55 @@ model Note {
   at         DateTime @default(now())
   text       String   @db.Text
 }
+
+// Append-only log: one row per follow-up status change. Never deleted or
+// updated. Powers the Dashboard's completions-per-week trend.
+model StatusEvent {
+  id         String   @id @default(cuid())
+  followUpId String
+  areaId     String
+  from       String
+  to         String
+  at         DateTime @default(now())
+
+  @@index([areaId, at])
+  @@index([to, at])
+}
+
+// Append-only log: one row per import that includes a bhag block. Never
+// deleted or updated. Powers the Dashboard's BHAG progress trend.
+model Snapshot {
+  id           String   @id @default(cuid())
+  kind         String // "bhag"
+  cashOnHand   Float
+  helocBalance Float
+  cashTarget   Float
+  asOf         DateTime @db.Date
+  at           DateTime @default(now())
+
+  @@index([kind, at])
+}
+
+// Weekly planned vs. actual hours per time category. Upserted by
+// (week, categoryId): planned is seeded/editable in-app, actual is pushed
+// via the import "time" block.
+model TimeWeek {
+  week       String // ISO week, e.g. "2026-W35"
+  categoryId String
+  planned    Float
+  actual     Float?
+
+  @@id([week, categoryId])
+}
+
+// One row per calendar day a "time" import block was received for a given
+// ISO week — powers the "days uploaded: N/7" completeness note. Not part
+// of the brief's three named models; a minimal additive log needed because
+// time_weeks stores only a weekly total, not per-day data.
+model TimeUploadLog {
+  week String // ISO week, e.g. "2026-W35"
+  date String // YYYY-MM-DD, the calendar day the import was received
+  at   DateTime @default(now())
+
+  @@id([week, date])
+}

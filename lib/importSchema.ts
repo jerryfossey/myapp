@@ -51,10 +51,21 @@ export const metaSchema = z.object({
   today: dateString.optional(),
 });
 
+export const timeEntrySchema = z.object({
+  categoryId: z.string().min(1),
+  actual: z.number().nonnegative(),
+});
+
+export const timeBlockSchema = z.object({
+  week: z.string().regex(/^\d{4}-W\d{2}$/, "expected ISO week, e.g. 2026-W35"),
+  entries: z.array(timeEntrySchema),
+});
+
 export const importPayloadSchema = z.object({
   meta: metaSchema.optional(),
   bhag: bhagSchema.optional(),
   areas: z.array(areaSchema).optional(),
+  time: timeBlockSchema.optional(),
 });
 
 export type ImportPayload = z.infer<typeof importPayloadSchema>;

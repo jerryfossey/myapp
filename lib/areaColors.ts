@@ -18,6 +18,26 @@ export const AREA_ACCENTS: Record<string, AreaAccent> = {
   family: { light: "#8a7f6d", dark: "#a89c86" }, // taupe
 };
 
+// Fixed display/stacking order for the 7 core-silo accents when they appear
+// together as a categorical chart series (e.g. the completions-per-week
+// stacked bar). These are the same hexes as AREA_ACCENTS above — only the
+// *order* differs from that object's key order, matching the dataviz
+// skill's own validated default categorical palette order. That order is
+// the CVD-safety mechanism (color-formula.md check 1): the app's original
+// silo listing order (…, jcb, pembroke, …) hard-fails dark-mode CVD
+// separation between mbe and pembroke (ΔE 1.6, deuteranopia); this order
+// (…, pembroke, jcb, …) passes cleanly in both modes with zero hex changes
+// (validated via scripts/validate_palette.js: light ΔE 9.1, dark ΔE 8.4).
+export const CORE_SILO_CHART_ORDER = [
+  "fairview",
+  "properties",
+  "mbe",
+  "jcb",
+  "pembroke",
+  "4ever",
+  "personal",
+] as const;
+
 const FALLBACK_ACCENT: AreaAccent = { light: "#737373", dark: "#a3a3a3" }; // neutral
 
 export function getAreaAccent(areaId: string): AreaAccent {

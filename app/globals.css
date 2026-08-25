@@ -58,3 +58,51 @@ body {
   border-left-style: solid;
   border-left-color: var(--accent);
 }
+
+/* Dashboard chart chrome & ink — from the dataviz skill's reference palette
+   (references/palette.md), scoped to .viz-root so charts can be dropped
+   anywhere without leaking tokens into the rest of the app. Diverging pair
+   (blue<->red) and the categorical "Other"/de-emphasis gray reuse the same
+   documented steps. */
+.viz-root {
+  --viz-surface: #ffffff;
+  --viz-text-primary: #0b0b0b;
+  --viz-text-secondary: #52514e;
+  --viz-text-muted: #898781;
+  --viz-gridline: #e1e0d9;
+  --viz-baseline: #c3c2b7;
+  --viz-diverging-pos: #e34948; /* red: overrun / HELOC */
+  --viz-diverging-neg: #2a78d6; /* blue: underrun / cash */
+  --viz-diverging-mid: #f0efec;
+  --viz-other: #898781;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .viz-root {
+    --viz-surface: #171717;
+    --viz-text-primary: #ffffff;
+    --viz-text-secondary: #c3c2b7;
+    --viz-text-muted: #898781;
+    --viz-gridline: #2c2c2a;
+    --viz-baseline: #383835;
+    --viz-diverging-pos: #e66767;
+    --viz-diverging-neg: #3987e5;
+    --viz-diverging-mid: #383835;
+    --viz-other: #898781;
+  }
+}
+:root[data-theme="dark"] .viz-root {
+  --viz-surface: #171717;
+  --viz-text-primary: #ffffff;
+  --viz-text-secondary: #c3c2b7;
+  --viz-text-muted: #898781;
+  --viz-gridline: #2c2c2a;
+  --viz-baseline: #383835;
+  --viz-diverging-pos: #e66767;
+  --viz-diverging-neg: #3987e5;
+  --viz-diverging-mid: #383835;
+  --viz-other: #898781;
+}
+
+.viz-tabular {
+  font-variant-numeric: tabular-nums;
+}

@@ -39,16 +39,26 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
       });
       break;
     case "done":
-      followUp = await prisma.followUp.update({
-        where: { id: params.id },
-        data: { status: "done" },
-      });
+      [followUp] = await prisma.$transaction([
+        prisma.followUp.update({
+          where: { id: params.id },
+          data: { status: "done" },
+        }),
+        prisma.statusEvent.create({
+          data: { followUpId: existing.id, areaId: existing.areaId, from: existing.status, to: "done" },
+        }),
+      ]);
       break;
     case "delegate":
-      followUp = await prisma.followUp.update({
-        where: { id: params.id },
-        data: { status: "delegated", waitingOn: input.delegateTo },
-      });
+      [followUp] = await prisma.$transaction([
+        prisma.followUp.update({
+          where: { id: params.id },
+          data: { status: "delegated", waitingOn: input.delegateTo },
+        }),
+        prisma.statusEvent.create({
+          data: { followUpId: existing.id, areaId: existing.areaId, from: existing.status, to: "delegated" },
+        }),
+      ]);
       break;
     case "reprioritize":
       followUp = await prisma.followUp.update({
