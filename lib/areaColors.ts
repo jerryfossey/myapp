@@ -16,6 +16,7 @@ export const AREA_ACCENTS: Record<string, AreaAccent> = {
   "ubt-coaching": { light: "#6470a0", dark: "#8b96c4" }, // slate blue
   "pbcc-properties": { light: "#9c6b3f", dark: "#b5824f" }, // clay
   family: { light: "#8a7f6d", dark: "#a89c86" }, // taupe
+  "home-maintenance": { light: "#b3441f", dark: "#c95f37" }, // brick
 };
 
 // Fixed display/stacking order for the 7 core-silo accents when they appear
