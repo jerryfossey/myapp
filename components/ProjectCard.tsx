@@ -29,6 +29,7 @@ export default function ProjectCard({ project }: { project: ProjectVM }) {
   const total = project.openCount + project.doneCount + project.delegatedCount;
   const open = project.subtasks.filter((s) => s.status !== "done");
   const done = project.subtasks.filter((s) => s.status === "done");
+  const siblingOptions = project.subtasks.map((s) => ({ id: s.id, item: s.item }));
 
   return (
     <div className={`card ${isPending ? "opacity-60" : ""}`}>
@@ -57,7 +58,7 @@ export default function ProjectCard({ project }: { project: ProjectVM }) {
       <div className="mt-3 space-y-2">
         {open.length === 0 && <p className="text-sm text-neutral-500">No open subtasks.</p>}
         {open.map((f) => (
-          <FollowUpRow key={f.id} followUp={f} showArea={false} />
+          <FollowUpRow key={f.id} followUp={f} showArea={false} siblingOptions={siblingOptions} />
         ))}
         <AddFollowUpForm areaId={project.areaId} projectId={project.id} label="+ Add subtask" />
       </div>
@@ -73,7 +74,7 @@ export default function ProjectCard({ project }: { project: ProjectVM }) {
       {showDone && (
         <div className="mt-2 space-y-2">
           {done.map((f) => (
-            <FollowUpRow key={f.id} followUp={f} showArea={false} />
+            <FollowUpRow key={f.id} followUp={f} showArea={false} siblingOptions={siblingOptions} />
           ))}
         </div>
       )}

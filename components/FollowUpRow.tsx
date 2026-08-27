@@ -6,6 +6,8 @@ import { FollowUpVM } from "@/lib/types";
 import { formatDate } from "@/lib/format";
 import { describeRecurrence } from "@/lib/recurrence";
 import RecurrenceFields, { defaultRecurrenceDraft, RecurrenceDraft } from "./RecurrenceFields";
+import StepsChecklist from "./StepsChecklist";
+import DependenciesPanel, { SiblingOption } from "./DependenciesPanel";
 
 async function patchFollowUp(id: string, body: unknown) {
   const res = await fetch(`/api/followups/${id}`, {
@@ -20,9 +22,11 @@ async function patchFollowUp(id: string, body: unknown) {
 export default function FollowUpRow({
   followUp,
   showArea = true,
+  siblingOptions,
 }: {
   followUp: FollowUpVM;
   showArea?: boolean;
+  siblingOptions?: SiblingOption[];
 }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -106,7 +110,10 @@ export default function FollowUpRow({
         <span className={`badge shrink-0 ${ageColor}`}>{followUp.ageDays}d</span>
       </div>
 
+      <DependenciesPanel followUpId={followUp.id} blockedBy={followUp.blockedBy} siblingOptions={siblingOptions} />
+
       <p className="mt-2 text-sm text-neutral-600 dark:text-neutral-400">→ {followUp.nextAction}</p>
+      <StepsChecklist followUpId={followUp.id} steps={followUp.steps} editable={!isDone} />
 
       {followUp.notes.length > 0 && (
         <button

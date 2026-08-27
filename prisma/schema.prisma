@@ -124,6 +124,13 @@ model FollowUp {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   notes     Note[]
+  steps     Step[]
+
+  // Dependencies within a project: this row is blocked by dependsOn, and
+  // in turn may block others. Informational only — every action stays
+  // clickable regardless; it's just a "blocked by" badge, not a gate.
+  blockedBy FollowUpDependency[] @relation("BlockedTask")
+  blocks    FollowUpDependency[] @relation("BlockingTask")
 
   @@index([status, priority, lastTouched])
   @@index([status, scheduledFor])
@@ -136,6 +143,34 @@ model Note {
   followUp   FollowUp @relation(fields: [followUpId], references: [id], onDelete: Cascade)
   at         DateTime @default(now())
   text       String   @db.Text
+}
+
+// A single checklist line under a follow-up — the finer breakdown of
+// "next action" the owner fills in as needed, reorderable via `order`.
+model Step {
+  id         String   @id @default(cuid())
+  followUpId String
+  followUp   FollowUp @relation(fields: [followUpId], references: [id], onDelete: Cascade)
+  text       String   @db.Text
+  done       Boolean  @default(false)
+  order      Int
+  createdAt  DateTime @default(now())
+
+  @@index([followUpId, order])
+}
+
+// A -> B means B (followUpId) is blocked by A (dependsOnId). Scoped to
+// subtasks sharing a project (enforced in the API, not here) and kept
+// acyclic (also enforced in the API).
+model FollowUpDependency {
+  id          String   @id @default(cuid())
+  followUpId  String
+  followUp    FollowUp @relation("BlockedTask", fields: [followUpId], references: [id], onDelete: Cascade)
+  dependsOnId String
+  dependsOn   FollowUp @relation("BlockingTask", fields: [dependsOnId], references: [id], onDelete: Cascade)
+  createdAt   DateTime @default(now())
+
+  @@unique([followUpId, dependsOnId])
 }
 
 // Append-only log: one row per follow-up status change. Never deleted or

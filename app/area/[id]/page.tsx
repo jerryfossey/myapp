@@ -3,7 +3,7 @@ import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { getReferenceToday } from "@/lib/meta";
 import { derivedReportStatus } from "@/lib/derived";
-import { toFollowUpVM, toProjectVM, sortFollowUps } from "@/lib/queries";
+import { toFollowUpVM, toProjectVM, sortFollowUps, followUpVMInclude } from "@/lib/queries";
 import { ReportVM } from "@/lib/types";
 import { formatDate } from "@/lib/format";
 import FollowUpRow from "@/components/FollowUpRow";
@@ -21,13 +21,13 @@ export default async function AreaDetailPage({ params }: { params: { id: string 
       where: { id: params.id },
       include: {
         reports: true,
-        followUps: { include: { area: true, notes: { orderBy: { at: "desc" } } } },
+        followUps: { include: { ...followUpVMInclude, notes: { orderBy: { at: "desc" } } } },
       },
     }),
     prisma.project.findMany({
       where: { areaId: params.id },
       orderBy: { createdAt: "asc" },
-      include: { area: true, followUps: { include: { area: true, notes: { orderBy: { at: "desc" } } } } },
+      include: { area: true, followUps: { include: { ...followUpVMInclude, notes: { orderBy: { at: "desc" } } } } },
     }),
     getReferenceToday(),
   ]);

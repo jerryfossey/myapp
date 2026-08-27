@@ -5,9 +5,14 @@ import { derivedReportStatus, followUpAgeDays, isProjectAtRisk, isStale } from "
 import { daysBetween, dateOnlyISO, parseDateOnly } from "./dates";
 import { FollowUpVM, ProjectVM, ReportVM } from "./types";
 
-type FollowUpWithArea = Prisma.FollowUpGetPayload<{
-  include: { area: true; notes: true };
-}>;
+export const followUpVMInclude = {
+  area: true,
+  notes: true,
+  steps: true,
+  blockedBy: { include: { dependsOn: true } },
+} satisfies Prisma.FollowUpInclude;
+
+type FollowUpWithArea = Prisma.FollowUpGetPayload<{ include: typeof followUpVMInclude }>;
 
 export function toFollowUpVM(f: FollowUpWithArea, today: Date): FollowUpVM {
   const ageDays = followUpAgeDays(f.lastTouched, today);
@@ -37,11 +42,21 @@ export function toFollowUpVM(f: FollowUpWithArea, today: Date): FollowUpVM {
           }
         : null,
     notes: f.notes.map((n) => ({ id: n.id, at: n.at.toISOString(), text: n.text })),
+    steps: f.steps
+      .slice()
+      .sort((a, b) => a.order - b.order)
+      .map((s) => ({ id: s.id, text: s.text, done: s.done, order: s.order })),
+    blockedBy: f.blockedBy.map((d) => ({
+      id: d.id,
+      dependsOnId: d.dependsOnId,
+      item: d.dependsOn.item,
+      done: d.dependsOn.status === "done",
+    })),
   };
 }
 
 type ProjectWithSubtasks = Prisma.ProjectGetPayload<{
-  include: { area: true; followUps: { include: { area: true; notes: true } } };
+  include: { area: true; followUps: { include: typeof followUpVMInclude } };
 }>;
 
 export function toProjectVM(p: ProjectWithSubtasks, today: Date): ProjectVM {
@@ -68,7 +83,7 @@ export function toProjectVM(p: ProjectWithSubtasks, today: Date): ProjectVM {
 export async function getAllFollowUps(): Promise<{ followUps: FollowUpVM[]; today: Date }> {
   const today = await getReferenceToday();
   const rows = await prisma.followUp.findMany({
-    include: { area: true, notes: { orderBy: { at: "desc" } } },
+    include: { ...followUpVMInclude, notes: { orderBy: { at: "desc" } } },
   });
 
   return { followUps: rows.map((f) => toFollowUpVM(f, today)), today };

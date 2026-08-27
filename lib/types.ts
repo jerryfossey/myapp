@@ -7,6 +7,10 @@ export type RecurrenceVM = {
   start: string; // ISO date
 } | null;
 
+export type StepVM = { id: string; text: string; done: boolean; order: number };
+
+export type DependencyVM = { id: string; dependsOnId: string; item: string; done: boolean };
+
 export type FollowUpVM = {
   id: string;
   areaId: string;
@@ -25,6 +29,8 @@ export type FollowUpVM = {
   dueOverdue: boolean; // dueDate has passed and it's still open
   recurrence: RecurrenceVM;
   notes: NoteVM[];
+  steps: StepVM[];
+  blockedBy: DependencyVM[]; // subtasks this one depends on, informational only
 };
 
 export type ReportVM = {
