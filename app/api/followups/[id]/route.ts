@@ -26,6 +26,12 @@ const actionSchema = z.discriminatedUnion("action", [
   z.object({ action: z.literal("reschedule"), scheduledFor: dateString.nullable() }),
   z.object({ action: z.literal("set-due-date"), dueDate: dateString.nullable() }),
   z.object({ action: z.literal("set-recurrence"), recurrence: recurrenceInput }),
+  z.object({
+    action: z.literal("edit"),
+    item: z.string().min(1),
+    nextAction: z.string().min(1),
+    waitingOn: z.string().min(1),
+  }),
 ]);
 
 export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
@@ -151,6 +157,17 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
               recurrenceUnit: null,
               recurrenceStart: null,
             },
+      });
+      break;
+    case "edit":
+      // Fixes text on an already-created item, regardless of whether it
+      // originated from the app or an import. For an imported item, a later
+      // import that touches this same id will overwrite item/nextAction/
+      // waitingOn again — they stay assistant-owned on update, per the
+      // field-ownership rules; this only edits the current value.
+      followUp = await prisma.followUp.update({
+        where: { id: params.id },
+        data: { item: input.item, nextAction: input.nextAction, waitingOn: input.waitingOn },
       });
       break;
   }

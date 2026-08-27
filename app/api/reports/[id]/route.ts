@@ -7,6 +7,12 @@ const actionSchema = z.discriminatedUnion("action", [
   z.object({ action: z.literal("received") }),
   z.object({ action: z.literal("flag"), status: z.enum(["due", "overdue"]) }),
   z.object({ action: z.literal("done") }), // archive — mirrors FollowUp's "done" action
+  z.object({
+    action: z.literal("edit"),
+    person: z.string().min(1),
+    owes: z.string().min(1),
+    cadence: z.string().min(1),
+  }),
 ]);
 
 export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
@@ -34,10 +40,15 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
       where: { id: params.id },
       data: { status: input.status },
     });
-  } else {
+  } else if (input.action === "done") {
     report = await prisma.report.update({
       where: { id: params.id },
       data: { status: "done" },
+    });
+  } else {
+    report = await prisma.report.update({
+      where: { id: params.id },
+      data: { person: input.person, owes: input.owes, cadence: input.cadence },
     });
   }
 

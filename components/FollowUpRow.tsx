@@ -31,13 +31,16 @@ export default function FollowUpRow({
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [expanded, setExpanded] = useState<
-    "delegate" | "priority" | "note" | "notes" | "schedule" | "due" | "recurrence" | null
+    "delegate" | "priority" | "note" | "notes" | "schedule" | "due" | "recurrence" | "edit" | null
   >(null);
   const [delegateTo, setDelegateTo] = useState("");
   const [priorityInput, setPriorityInput] = useState(followUp.priority?.toString() ?? "");
   const [noteText, setNoteText] = useState("");
   const [scheduleInput, setScheduleInput] = useState(followUp.scheduledFor ?? "");
   const [dueInput, setDueInput] = useState(followUp.dueDate ?? "");
+  const [editItem, setEditItem] = useState(followUp.item);
+  const [editNextAction, setEditNextAction] = useState(followUp.nextAction);
+  const [editWaitingOn, setEditWaitingOn] = useState(followUp.waitingOn);
   const [recurrence, setRecurrence] = useState<RecurrenceDraft>(
     followUp.recurrence
       ? { type: followUp.recurrence.type, interval: String(followUp.recurrence.interval), unit: followUp.recurrence.unit, start: followUp.recurrence.start }
@@ -107,7 +110,21 @@ export default function FollowUpRow({
             )}
           </div>
         </div>
-        <span className={`badge shrink-0 ${ageColor}`}>{followUp.ageDays}d</span>
+        <div className="flex shrink-0 flex-col items-end gap-1">
+          <span className={`badge ${ageColor}`}>{followUp.ageDays}d</span>
+          <button
+            className="text-xs font-medium text-neutral-400 underline underline-offset-2 hover:text-neutral-600 dark:hover:text-neutral-300"
+            disabled={isPending}
+            onClick={() => {
+              setEditItem(followUp.item);
+              setEditNextAction(followUp.nextAction);
+              setEditWaitingOn(followUp.waitingOn);
+              setExpanded(expanded === "edit" ? null : "edit");
+            }}
+          >
+            Edit
+          </button>
+        </div>
       </div>
 
       <DependenciesPanel followUpId={followUp.id} blockedBy={followUp.blockedBy} siblingOptions={siblingOptions} />
@@ -357,6 +374,49 @@ export default function FollowUpRow({
                 Clear
               </button>
             )}
+          </div>
+        </div>
+      )}
+
+      {expanded === "edit" && (
+        <div className="mt-3 space-y-2">
+          <input
+            autoFocus
+            value={editItem}
+            onChange={(e) => setEditItem(e.target.value)}
+            placeholder="What needs to happen?"
+            className="w-full rounded-xl border border-neutral-300 px-3 py-2 text-sm dark:border-neutral-700 dark:bg-neutral-900"
+          />
+          <input
+            value={editNextAction}
+            onChange={(e) => setEditNextAction(e.target.value)}
+            placeholder="Next action"
+            className="w-full rounded-xl border border-neutral-300 px-3 py-2 text-sm dark:border-neutral-700 dark:bg-neutral-900"
+          />
+          <input
+            value={editWaitingOn}
+            onChange={(e) => setEditWaitingOn(e.target.value)}
+            placeholder="Waiting on"
+            className="w-full rounded-xl border border-neutral-300 px-3 py-2 text-sm dark:border-neutral-700 dark:bg-neutral-900"
+          />
+          <div className="flex gap-2">
+            <button
+              className="btn-primary"
+              disabled={isPending || !editItem.trim() || !editNextAction.trim() || !editWaitingOn.trim()}
+              onClick={() =>
+                run({
+                  action: "edit",
+                  item: editItem.trim(),
+                  nextAction: editNextAction.trim(),
+                  waitingOn: editWaitingOn.trim(),
+                })
+              }
+            >
+              Save
+            </button>
+            <button className="btn-secondary" disabled={isPending} onClick={() => setExpanded(null)}>
+              Cancel
+            </button>
           </div>
         </div>
       )}

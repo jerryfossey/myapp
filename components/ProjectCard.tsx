@@ -12,6 +12,8 @@ export default function ProjectCard({ project }: { project: ProjectVM }) {
   const [isPending, startTransition] = useTransition();
   const [editingDue, setEditingDue] = useState(false);
   const [dueInput, setDueInput] = useState(project.dueDate ?? "");
+  const [editingName, setEditingName] = useState(false);
+  const [nameInput, setNameInput] = useState(project.name);
   const [showDone, setShowDone] = useState(false);
 
   function patch(body: unknown) {
@@ -22,6 +24,7 @@ export default function ProjectCard({ project }: { project: ProjectVM }) {
         body: JSON.stringify(body),
       });
       setEditingDue(false);
+      setEditingName(false);
       router.refresh();
     });
   }
@@ -93,7 +96,38 @@ export default function ProjectCard({ project }: { project: ProjectVM }) {
         <button className="btn-secondary" disabled={isPending} onClick={() => patch({ action: "archive" })}>
           Archive
         </button>
+        <button
+          className="btn-secondary"
+          disabled={isPending}
+          onClick={() => {
+            setNameInput(project.name);
+            setEditingName(!editingName);
+          }}
+        >
+          Rename
+        </button>
       </div>
+
+      {editingName && (
+        <div className="mt-3 flex gap-2">
+          <input
+            autoFocus
+            value={nameInput}
+            onChange={(e) => setNameInput(e.target.value)}
+            className="min-w-0 flex-1 rounded-xl border border-neutral-300 px-3 py-2 text-sm dark:border-neutral-700 dark:bg-neutral-900"
+          />
+          <button
+            className="btn-primary"
+            disabled={isPending || !nameInput.trim()}
+            onClick={() => patch({ action: "rename", name: nameInput.trim() })}
+          >
+            Save
+          </button>
+          <button className="btn-secondary" disabled={isPending} onClick={() => setEditingName(false)}>
+            Cancel
+          </button>
+        </div>
+      )}
 
       {editingDue && (
         <div className="mt-3 flex gap-2">
