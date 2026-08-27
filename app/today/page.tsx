@@ -17,11 +17,14 @@ export default async function TodayPage() {
 
   const todayISO = dateOnlyISO(today);
 
-  // Today = due now: unscheduled backlog, anything scheduled for today, and
-  // anything scheduled for a day that's already passed. A follow-up
-  // scheduled for a future day belongs on the Week view instead.
+  // Today = due now: unscheduled backlog, anything scheduled for today or
+  // earlier, and anything whose due date has already passed — even if it's
+  // scheduled for a future day, a blown deadline belongs in front of you
+  // now, not buried on Week under a day that hasn't happened yet.
   const open = sortFollowUps(
-    followUps.filter((f) => f.status !== "done" && (!f.scheduledFor || f.scheduledFor <= todayISO))
+    followUps.filter(
+      (f) => f.status !== "done" && ((!f.scheduledFor || f.scheduledFor <= todayISO) || f.dueOverdue)
+    )
   );
   const overdueReports = reports.filter((r) => r.displayStatus === "overdue");
 
